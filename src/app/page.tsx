@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { UserProfile, SectionType, Question, QuestionOptionId } from "@/types/sat";
-import { getStoredProfiles, getActiveUsername, setActiveUsername, saveUserProfile } from "@/lib/storage";
+import { getActiveProfile, setActiveUsername, saveUserProfile } from "@/lib/storage";
 import { selectAdaptiveQuestion } from "@/lib/questionSelector";
 import { calculateUpdatedStats } from "@/lib/scoring";
 import { HeaderStats } from "@/components/HeaderStats";
@@ -21,15 +21,11 @@ export default function Home() {
   const [ratingDelta, setRatingDelta] = useState<number | null>(null);
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
 
-  // Initialize and load active user
+  // Initialize and load active user across sessions (with backup recovery)
   useEffect(() => {
-    const activeUsername = getActiveUsername();
-    if (activeUsername) {
-      const profiles = getStoredProfiles();
-      const existing = profiles[activeUsername];
-      if (existing) {
-        setProfile(existing);
-      }
+    const active = getActiveProfile();
+    if (active) {
+      setProfile(active);
     }
     setLoading(false);
   }, []);
@@ -113,6 +109,7 @@ export default function Home() {
       ],
     };
 
+    // Immediately persist updated score and history across sessions
     saveUserProfile(updatedProfile);
     setProfile(updatedProfile);
     setIsSubmitted(true);
@@ -139,6 +136,10 @@ export default function Home() {
     );
   }
 
+  const totalScore = profile
+    ? profile.math.scoreEstimate + profile.readingWriting.scoreEstimate
+    : undefined;
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans selection:bg-indigo-500 selection:text-white">
       {!profile && <LoginModal onSuccess={(p) => setProfile(p)} />}
@@ -147,6 +148,7 @@ export default function Home() {
         <>
           <HeaderStats
             username={profile.username}
+            displayName={profile.displayName}
             mathStats={profile.math}
             rwStats={profile.readingWriting}
             onLogout={handleLogout}
@@ -169,6 +171,7 @@ export default function Home() {
                 onNext={handleNext}
                 ratingDelta={ratingDelta}
                 scoreDelta={scoreDelta}
+                totalScore={totalScore}
               />
             ) : (
               <div className="p-8 text-center text-sm text-zinc-500">Loading next question...</div>

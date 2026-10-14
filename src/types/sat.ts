@@ -38,6 +38,7 @@ export interface UserStats {
 
 export interface UserProfile {
   username: string;
+  displayName?: string;
   pin: string;
   math: UserStats;
   readingWriting: UserStats;

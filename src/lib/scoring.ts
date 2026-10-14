@@ -95,3 +95,155 @@ export function createInitialStats(): UserStats {
     domainMastery: {},
   };
 }
+
+/**
+ * Official College Board SAT Composite Score to User Group Percentile mapping.
+ * Derived from recent high school graduating classes who wrote the SAT.
+ */
+const SAT_COMPOSITE_PERCENTILE_TABLE: [number, number][] = [
+  [1600, 99],
+  [1550, 99],
+  [1520, 98],
+  [1500, 97],
+  [1470, 96],
+  [1450, 95],
+  [1420, 94],
+  [1400, 93],
+  [1380, 91],
+  [1350, 89],
+  [1330, 88],
+  [1300, 85],
+  [1270, 82],
+  [1250, 80],
+  [1220, 77],
+  [1200, 75],
+  [1170, 71],
+  [1150, 69],
+  [1120, 63],
+  [1100, 59],
+  [1070, 53],
+  [1050, 51],
+  [1030, 49],
+  [1000, 45],
+  [970, 39],
+  [950, 36],
+  [920, 31],
+  [900, 28],
+  [870, 23],
+  [850, 20],
+  [820, 16],
+  [800, 13],
+  [770, 10],
+  [750, 8],
+  [720, 5],
+  [700, 3],
+  [650, 1],
+  [400, 1],
+];
+
+export function getOrdinalSuffix(n: number): string {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+
+export function getSatPercentile(totalScore: number): {
+  percentile: number;
+  formatted: string;
+  topPercent: number;
+  label: string;
+} {
+  const clamped = Math.max(400, Math.min(1600, Math.round(totalScore)));
+
+  let percentile = 1;
+  for (let i = 0; i < SAT_COMPOSITE_PERCENTILE_TABLE.length - 1; i++) {
+    const [scoreUpper, pUpper] = SAT_COMPOSITE_PERCENTILE_TABLE[i];
+    const [scoreLower, pLower] = SAT_COMPOSITE_PERCENTILE_TABLE[i + 1];
+
+    if (clamped >= scoreLower && clamped <= scoreUpper) {
+      if (scoreUpper === scoreLower) {
+        percentile = pUpper;
+      } else {
+        const ratio = (clamped - scoreLower) / (scoreUpper - scoreLower);
+        percentile = Math.round(pLower + ratio * (pUpper - pLower));
+      }
+      break;
+    }
+  }
+
+  percentile = Math.max(1, Math.min(99, percentile));
+  const suffix = getOrdinalSuffix(percentile);
+  const formatted = clamped >= 1580 ? "99th+" : `${percentile}${suffix}`;
+  const topPercent = Math.max(1, 100 - percentile);
+  const label = clamped >= 1580 ? "Top <1% of test writers" : `Top ${topPercent}% of test writers`;
+
+  return {
+    percentile,
+    formatted,
+    topPercent,
+    label,
+  };
+}
+
+const SAT_SECTION_PERCENTILE_TABLE: Record<"math" | "reading_writing", [number, number][]> = {
+  math: [
+    [800, 99],
+    [750, 95],
+    [700, 92],
+    [650, 83],
+    [600, 70],
+    [550, 54],
+    [500, 39],
+    [450, 24],
+    [400, 13],
+    [350, 6],
+    [300, 2],
+    [200, 1],
+  ],
+  reading_writing: [
+    [800, 99],
+    [750, 98],
+    [700, 93],
+    [650, 85],
+    [600, 72],
+    [550, 58],
+    [500, 43],
+    [450, 28],
+    [400, 16],
+    [350, 8],
+    [300, 3],
+    [200, 1],
+  ],
+};
+
+export function getSectionPercentile(section: "math" | "reading_writing", score: number): {
+  percentile: number;
+  formatted: string;
+} {
+  const table = SAT_SECTION_PERCENTILE_TABLE[section];
+  const clamped = Math.max(200, Math.min(800, Math.round(score)));
+  let percentile = 1;
+
+  for (let i = 0; i < table.length - 1; i++) {
+    const [scoreUpper, pUpper] = table[i];
+    const [scoreLower, pLower] = table[i + 1];
+
+    if (clamped >= scoreLower && clamped <= scoreUpper) {
+      if (scoreUpper === scoreLower) {
+        percentile = pUpper;
+      } else {
+        const ratio = (clamped - scoreLower) / (scoreUpper - scoreLower);
+        percentile = Math.round(pLower + ratio * (pUpper - pLower));
+      }
+      break;
+    }
+  }
+
+  percentile = Math.max(1, Math.min(99, percentile));
+  const suffix = getOrdinalSuffix(percentile);
+  const formatted = clamped >= 790 ? "99th+" : `${percentile}${suffix}`;
+  return { percentile, formatted };
+}

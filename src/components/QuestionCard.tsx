@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Question, QuestionOptionId } from "@/types/sat";
 import { MathText } from "@/components/MathText";
-import { ChevronDown, ChevronUp, CheckCircle2, XCircle, ArrowRight, Lightbulb } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle2, XCircle, ArrowRight, Lightbulb, Users } from "lucide-react";
+import { getSatPercentile } from "@/lib/scoring";
 
 interface QuestionCardProps {
   question: Question;
@@ -14,6 +15,7 @@ interface QuestionCardProps {
   onNext: () => void;
   ratingDelta: number | null;
   scoreDelta: number | null;
+  totalScore?: number;
 }
 
 export function QuestionCard({
@@ -24,6 +26,7 @@ export function QuestionCard({
   onSubmit,
   onNext,
   scoreDelta,
+  totalScore,
 }: QuestionCardProps) {
   const [showPassage, setShowPassage] = useState(true);
   const isCorrect = selectedOption === question.correctAnswer;
@@ -157,6 +160,29 @@ export function QuestionCard({
               </span>
             )}
           </div>
+
+          {/* Probable SAT Score & Writers Percentile Banner */}
+          {totalScore !== undefined && (() => {
+            const pInfo = getSatPercentile(totalScore);
+            return (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-2.5 text-xs dark:border-indigo-900/40 dark:bg-indigo-950/30">
+                <div className="flex items-center gap-1.5 font-bold text-zinc-800 dark:text-zinc-200">
+                  <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Probable SAT Score:</span>
+                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{totalScore}</span>
+                  <span className="text-[10px] text-zinc-500 font-medium">/ 1600</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-extrabold text-indigo-700 dark:text-indigo-300">
+                  <span className="rounded-md bg-white px-2 py-0.5 text-[11px] shadow-sm dark:bg-zinc-800 border border-indigo-200 dark:border-indigo-800">
+                    {pInfo.formatted} Percentile
+                  </span>
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">
+                    ({pInfo.label})
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Explanation & Step-by-Step Breakdown */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
